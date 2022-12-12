@@ -130,32 +130,3 @@ bool MemoryAPI::checkAddressElem(LPVOID address, char elem, UINT8 elemNumber) {
     if (ss.str()[elemNumber] != elem)
         return false;
 }
-
-		static PVOID GetRegionForAlloc(PVOID address) {
-			map<uint64_t, PVOID> reservedRegions;
-			vector<uint64_t> keys;
-
-			SYSTEM_INFO sysInfo;
-			GetSystemInfo(&sysInfo);
-
-			PVOID current = nullptr;
-			MEMORY_BASIC_INFORMATION mbi;
-
-			uint64_t offset = 0;
-			uint64_t offsetFromAddress = 0;
-			while (current < sysInfo.lpMaximumApplicationAddress) {
-				current = reinterpret_cast<PVOID>(reinterpret_cast<uintptr_t>(sysInfo.lpMinimumApplicationAddress) + offset);
-				VirtualQuery(current, &mbi, sizeof(MEMORY_BASIC_INFORMATION));
-
-				if (mbi.State == MEM_RESERVE) {
-					if (current > address) offsetFromAddress = reinterpret_cast<uintptr_t>(current) - reinterpret_cast<uintptr_t>(address);
-					else offsetFromAddress = reinterpret_cast<uintptr_t>(address) - reinterpret_cast<uintptr_t>(current);
-					reservedRegions.insert(pair<uint64_t, PVOID>(offsetFromAddress, current));
-				}
-
-				offset += mbi.RegionSize;
-			}
-
-			for (map<uint64_t, PVOID>::iterator it = reservedRegions.begin(); it != reservedRegions.end(); ++it) keys.push_back(it->first);
-			return reservedRegions[*min_element(keys.begin(), keys.end())];
-		}
